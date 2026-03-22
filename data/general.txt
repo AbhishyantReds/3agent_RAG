@@ -1,0 +1,36 @@
+DROMA Electronics General Customer Support Rules:
+Service requests can be raised via web chat, email, or helpline.
+Business support hours are Monday to Saturday, 9 AM to 7 PM local time.
+Refunds are processed only after product inspection and approval.
+Approved refunds are credited within 7 to 10 business days.
+Customers should back up personal data before submitting devices for repair.
+
+Customer Communication Standards:
+All service tickets receive a unique reference ID for tracking.
+Customers are notified through SMS or email at each major service stage: ticket creation, inspection, repair start, completion, and dispatch.
+If contact attempts fail for 7 consecutive days, the ticket may be marked pending customer response.
+
+Pickup and Drop Policy:
+Pickup service availability depends on pin code and product category.
+Products should be packed securely before handover; transit damage due to poor packaging may not be covered.
+Unclaimed repaired products may attract storage charges after 30 days from completion notice.
+
+Return, Cancellation, and Refund:
+Order cancellation is allowed before shipment confirmation.
+Returns are accepted only for eligible categories and within the approved return window mentioned on invoice.
+Refund mode follows original payment method, subject to payment gateway and banking timelines.
+Shipping or installation charges may be non-refundable unless product defect is confirmed at delivery.
+
+Escalation Matrix:
+Level 1: Customer support desk for first response and ticket registration.
+Level 2: Service coordinator for delayed repair or repeated follow-up issues.
+Level 3: Regional support manager for unresolved cases beyond committed SLA.
+
+Privacy and Data Handling:
+Devices submitted for service may be reset during diagnostics.
+Customers are responsible for removing SIM cards, memory cards, and personal accounts before handover.
+DROMA is not liable for unrecoverable personal data loss during repair operations.
+
+Fraud and Misuse Checks:
+Tampered invoices, altered serial numbers, or mismatched IMEI records may lead to claim rejection.
+Support abuse or repeated false claims can result in account-level support restrictions.

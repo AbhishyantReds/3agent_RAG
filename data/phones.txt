@@ -1,0 +1,35 @@
+DROMA Electronics Phone Service Policy:
+Smartphones include a 12-month limited warranty for manufacturing defects.
+Physical damage, water damage, and unauthorized repair attempts void warranty coverage.
+In-warranty software issues are handled within 2 business days.
+Display replacement under paid service is usually completed in 3 to 5 business days.
+Proof of purchase is mandatory for all warranty claims.
+
+Extended Phone Coverage Details:
+Warranty applies to factory defects in motherboard, power IC, charging IC, speaker receiver, and approved camera modules.
+Battery backup reduction due to regular usage is considered wear and may not qualify for free replacement after 6 months.
+Display issues caused by pressure cracks, drops, or liquid ingress are excluded from standard warranty.
+
+Phone DOA and Early Failure Policy:
+Devices that fail within 48 hours of first activation can be tagged for priority diagnostics.
+If defect is confirmed as factory-related within 7 days of purchase, customer may receive replacement approval as per stock.
+Replacement requests must include bill copy, IMEI verification, and complete box contents.
+
+Software and Account Support:
+System update failures, boot loops after official updates, and factory software corruption are covered in warranty period.
+Issues related to forgotten lock credentials, third-party app crashes, or rooted firmware are treated as non-warranty.
+Data backup support may be provided as best effort but is not guaranteed before reset or board replacement.
+
+Repair Timelines and Parts:
+Charging port, mic, and speaker module replacements are typically completed in 2 to 4 business days.
+Camera module and board-level repairs may take 5 to 9 business days.
+If imported parts are delayed beyond 10 business days, escalation can be raised through DROMA support.
+
+Warranty Claim Process:
+Customer must provide invoice, IMEI number, and registered phone number.
+Diagnostic report is shared before paid repair begins for out-of-warranty devices.
+Replaced components carry a 90-day service warranty unless otherwise specified.
+
+Warranty Exclusions:
+Damage from unauthorized chargers, power surges, accidental drops, fire, theft, or misuse is excluded.
+Devices repaired by non-authorized centers are not eligible for manufacturer warranty continuation.

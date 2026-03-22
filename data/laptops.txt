@@ -1,0 +1,36 @@
+DROMA Electronics Laptop Warranty Policy:
+All laptops include a 1-year manufacturer warranty from date of purchase.
+Battery health degradation is treated as normal wear and is not covered after 6 months.
+Screen damage and liquid damage are not covered under standard warranty.
+Customers must provide invoice and serial number for service requests.
+Average repair turnaround time is 5 to 7 business days.
+
+Extended Laptop Service Details:
+Warranty covers manufacturing defects in motherboard, SSD/HDD, RAM, keyboard controller, and factory-fitted Wi-Fi modules.
+Warranty does not cover cosmetic wear, dents, scratches, cracked hinges due to impact, or damage caused by pests.
+Data recovery is not included in warranty service and may be billed separately if requested.
+OS reinstallation due to malware or user-side software issues is treated as paid service unless device is under a DROMA Care plan.
+
+Dead on Arrival (DOA) Policy:
+If a laptop fails within 7 calendar days of delivery and passes diagnostics for manufacturing fault, it is eligible for replacement review.
+Replacement review requires unboxing video or delivery condition proof, original packaging, and all bundled accessories.
+Final replacement approval is issued after authorized service center inspection.
+
+Repair and Escalation Timelines:
+Minor issues such as keyboard replacement or fan cleaning are usually completed in 3 to 5 business days.
+Major board-level repair may take 7 to 12 business days depending on part availability.
+If a required part is out of stock for more than 14 days, customers may request escalation for alternative resolution.
+
+Claim Process:
+Customers can register claims via DROMA chat, helpline, or nearest authorized center.
+Required documents: proof of purchase, device serial number, and customer contact details.
+Out-of-warranty diagnostic fee is communicated before repair approval.
+
+Battery and Adapter Notes:
+Battery swelling, usage pattern impact, and performance loss over time are treated under battery-specific policy.
+Original DROMA adapter usage is recommended; third-party charger damage is not covered.
+
+Warranty Validity Conditions:
+Warranty is valid only when product serial number is intact and readable.
+Unauthorized opening, soldering, or third-party board modification voids manufacturer warranty.
+Service quality and part authenticity are guaranteed only at authorized DROMA centers.

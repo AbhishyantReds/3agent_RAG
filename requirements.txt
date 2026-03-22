@@ -1,0 +1,10 @@
+gradio==4.44.1
+openai
+faiss-cpu==1.7.4
+langchain-text-splitters
+deep_translator
+langdetect
+python-dotenv
+numpy==1.26.4
+sentence-transformers
+huggingface_hub==0.25.2
