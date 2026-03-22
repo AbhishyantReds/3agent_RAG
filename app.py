@@ -23,6 +23,21 @@ SYSTEM_PROMPT = """You are a customer support assistant for DROMA Electronics.
 Answer the user's question using ONLY the context provided below.
 If the answer is not in the context, say: \"I don't have information on that.\"
 Be concise and helpful."""
+FALLBACK_EN = (
+    "I'm here to help. I couldn't find that in DROMA policy docs yet. "
+    "Please ask about warranties, returns/refunds, service timelines, or accessories."
+)
+GREETING_WORDS = {
+    "hi",
+    "hello",
+    "hey",
+    "hola",
+    "namaste",
+    "namaskaram",
+    "vanakkam",
+    "hii",
+    "hlo",
+}
 MIXED_MAP = {
     "polciy": "policy",
     "polcy": "policy",
@@ -114,15 +129,38 @@ def is_mixed_style_query(text: str) -> bool:
     return any(h in q for h in hints)
 
 
+def detect_supported_lang(text: str) -> str:
+    try:
+        lang = detect(text)
+    except Exception:
+        lang = "en"
+    return lang if lang in SUPPORTED_LANGS else "en"
+
+
+def is_greeting(text: str) -> bool:
+    q = re.sub(r"[^a-z\s]", " ", text.lower()).strip()
+    if not q:
+        return False
+    return q in GREETING_WORDS or len(q.split()) <= 2 and any(w in GREETING_WORDS for w in q.split())
+
+
+def greeting_reply(src_lang: str) -> str:
+    replies = {
+        "en": "Hi! I can help with DROMA warranties, refunds, repairs, and accessories.",
+        "hi": "नमस्ते! मैं DROMA की वारंटी, रिफंड, रिपेयर और एक्सेसरीज़ में मदद कर सकता हूँ।",
+        "te": "హాయ్! DROMA వారంటీ, రిఫండ్, రిపేర్, యాక్సెసరీస్ గురించి సహాయం చేస్తాను.",
+        "gu": "નમસ્તે! હું DROMA ની વોરંટી, રિફંડ, રિપેર અને એક્સેસરીઝ વિશે મદદ કરી શકું છું.",
+        "ta": "வணக்கம்! DROMA வாரண்டி, ரிஃபண்ட், ரிப்பேர் மற்றும் ஆக்சஸரீஸ் பற்றி உதவ முடியும்.",
+    }
+    return replies.get(src_lang, replies["en"])
+
+
 def answer(query: str, history: list) -> str:
     if not query or not query.strip():
         return "Please enter a question."
-    try:
-        src_lang = detect(query)
-    except Exception:
-        src_lang = "en"
-    if src_lang not in SUPPORTED_LANGS:
-        src_lang = "en"
+    src_lang = detect_supported_lang(query)
+    if is_greeting(query):
+        return greeting_reply(src_lang)
     try:
         if src_lang == "en":
             auto_en = translate_text(query, "auto", "en")
@@ -160,6 +198,8 @@ def answer(query: str, history: list) -> str:
             temperature=0.2,
         )
         answer_en = resp.choices[0].message.content.strip()
+        if answer_en.lower() == "i don't have information on that.":
+            answer_en = FALLBACK_EN
         return answer_en if src_lang == "en" else translate_text(answer_en, "en", src_lang)
     except Exception:
         return "I had a temporary issue processing that. Please try again."
