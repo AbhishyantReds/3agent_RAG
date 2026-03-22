@@ -1,6 +1,8 @@
 import os
 import pickle
 import re
+import subprocess
+import sys
 
 import faiss
 import gradio as gr
@@ -44,8 +46,22 @@ groq_base = (os.getenv("GROQ_BASE_URL") or "https://api.groq.com/openai/v1").str
 index_path = os.path.join(STORE_DIR, "index.faiss")
 chunks_path = os.path.join(STORE_DIR, "chunks.pkl")
 meta_path = os.path.join(STORE_DIR, "meta.pkl")
-if not os.path.exists(index_path) or not os.path.exists(chunks_path) or not os.path.exists(meta_path):
-    raise SystemExit("vector_store missing. Run: python ingest.py")
+
+
+def ensure_vector_store() -> None:
+    if os.path.exists(index_path) and os.path.exists(chunks_path) and os.path.exists(meta_path):
+        return
+    print("vector_store missing. Running ingest.py...")
+    cmd = [sys.executable, "ingest.py"]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise SystemExit(f"Failed to build vector_store: {detail}")
+    if not os.path.exists(index_path) or not os.path.exists(chunks_path) or not os.path.exists(meta_path):
+        raise SystemExit("ingest.py finished but vector_store files were not created")
+
+
+ensure_vector_store()
 
 index = faiss.read_index(index_path)
 with open(chunks_path, "rb") as f:
