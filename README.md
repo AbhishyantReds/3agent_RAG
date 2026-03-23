@@ -6,14 +6,14 @@
 
 ## ✨ Features
 
-✅ **5 Languages Supported**: English, Hindi, Telugu, Gujarati, Tamil  
-✅ **Hinglish/Telgish Compatible**: "Return policy kya hai?" works perfectly  
-✅ **Mixed-Script Support**: Detects and normalizes Roman-script inputs (e.g., "polcy" → "policy")  
-✅ **Instant Setup**: No ML expertise needed—production-ready in 5 minutes  
-✅ **Local Embeddings**: CPU-only option (free, no API calls)  
-✅ **Fast Retrieval**: FAISS vector search on local disk  
-✅ **Policy-Grounded**: Only answers from your knowledge base  
-✅ **Chat UI**: Beautiful Gradio web interface  
+✅ **5 Languages Supported**: English, Hindi, Telugu, Gujarati, Tamil
+✅ **Hinglish/Telgish Compatible**: "Return policy kya hai?" works perfectly
+✅ **Mixed-Script Support**: Detects and normalizes Roman-script inputs (e.g., "polcy" → "policy")
+✅ **Instant Setup**: No ML expertise needed—production-ready in 5 minutes
+✅ **Local Embeddings**: CPU-only option (free, no API calls)
+✅ **Fast Retrieval**: FAISS vector search on local disk
+✅ **Policy-Grounded**: Only answers from your knowledge base
+✅ **Chat UI**: Beautiful Gradio web interface
 
 ---
 
@@ -24,7 +24,7 @@
 **English:**
 ```
 Q: Is laptop screen damage covered under warranty?
-A: No, laptop screen damage is not covered under warranty. 
+A: No, laptop screen damage is not covered under warranty.
    Physical damage is explicitly excluded from our 1-year limited warranty.
 ```
 
@@ -37,14 +37,14 @@ A: DROMA लैपटॉप की वारंटी 1 साल की है�
 **Telugu:**
 ```
 Q: Laptop screen damage warranty lo cover avutunda?
-A: No, laptop screen damage warranty lo cover avutalu. 
+A: No, laptop screen damage warranty lo cover avutalu.
    Physical damage exclusion lo reside avutundi.
 ```
 
 **Hinglish (Mixed Roman + Hindi):**
 ```
 Q: Return policy kya hai? Kitne din ka hai?
-A: Return policy 7 to 10 business days ka hai. 
+A: Return policy 7 to 10 business days ka hai.
    Approved refunds within this time automatically credited honge.
 ```
 
@@ -64,9 +64,8 @@ A: Return policy 7 to 10 rojulu. Approved refunds credit avutay.
 | **Backend** | Python 3.11 | Processing pipeline | Free |
 | **Vectorization** | sentence-transformers (all-MiniLM-L6-v2) | Local embeddings | Free |
 | **Vector DB** | FAISS | Similarity search | Free |
-| **LLM - Option B** | OpenAI (gpt-4o-mini) | High quality AI | ~$0.15/1M tokens |
+| **LLM** | OpenAI (gpt-4o-mini) | High quality AI | ~$0.15/1M tokens |
 | **Language Detection** | langdetect | Detect input language | Free |
-| **Translation** | Google Translate (deep_translator) | Multi-language support | Free (via API) |
 | **Text Splitting** | langchain | Chunk long policies | Free |
 
 ---
@@ -94,15 +93,6 @@ python -m venv .venv
 ### Step 3: Configure API Keys
 Create `.env` file in project root:
 
-```
-```
-
-**Option B: OpenAI Only**
-```
-OPENAI_API_KEY=sk_your_openai_key_here
-```
-
-**Option C: Both (Best Quality)**
 ```
 OPENAI_API_KEY=sk_your_openai_key_here
 ```
@@ -156,27 +146,27 @@ Try these:
 
 ## 📋 File Descriptions
 
-### `app.py` (160 lines)
+### `app.py` (344 lines)
 **The chatbot engine.** Runs the full RAG pipeline:
-1. Detects input language
-2. Translates to English
-3. Handles Hinglish/Telgish normalization
-4. Generates embedding
-5. Searches FAISS index
-6. Calls LLM with context
-7. Translates response back
-8. Displays in Gradio UI
+1. Detects input language style (including Hinglish/Telgish)
+2. Normalizes queries to English for embedding
+3. Generates embedding
+4. Searches FAISS index
+5. Calls LLM with context
+6. Ensures response in user's original language/style
+7. Displays in Gradio UI
 
 **Key Functions:**
 - `answer(query, history)` → RAG pipeline
-- `normalize_mixed_query()` → Hinglish/Telgish support
-- `is_mixed_style_query()` → Detect mixed inputs
+- `detect_style(query)` → Language style detection
+- `normalize_to_english(query)` → Query normalization
+- `retrieve_context(english_query)` → FAISS search
 
-### `ingest.py` (60 lines)
+### `ingest.py` (61 lines)
 **One-time setup script.** Builds the vector store:
 1. Reads all `.txt` files from `data/`
-2. Splits into 500-char chunks (50 overlap)
-3. Generates embeddings (local or OpenAI)
+2. Splits into 800-char chunks (100 overlap)
+3. Generates embeddings (OpenAI or local)
 4. Creates FAISS IndexFlatL2
 5. Saves to `vector_store/`
 
@@ -198,7 +188,8 @@ Try these:
 ### `requirements.txt`
 Pinned versions for compatibility:
 ```
-gradio==4.44.1              ← Web UI
+gradio==6.9.0               ← Web UI
+openai                      ← OpenAI API client
 faiss-cpu==1.7.4            ← Vector search
 langchain-text-splitters    ← Text chunking
 deep_translator             ← Google Translate wrapper
@@ -213,34 +204,32 @@ huggingface_hub==0.25.2     ← Model download utility
 
 ## 🎯 How It Works (Full RAG Pipeline)
 
-### 8-Stage Processing
+### 7-Stage Processing
 
 ```
 INPUT: Customer Question
    │ (any language, any script)
    │
-   ├─ STAGE 1: Language Detection
-   │  └─ Detects: en / hi / te / gu / ta
+   ├─ STAGE 1: Language Style Detection
+   │  └─ Detects: english / hindi / telugu / gujarati / tamil / hinglish / telgish
    │
-   ├─ STAGE 2: Normalize Hinglish/Telgish
-   │  └─ "polcy" → "policy", "kya hai" → "what is"
+   ├─ STAGE 2: Normalize to English
+   │  └─ Uses LLM to convert any style to clean English for embedding
    │
-   ├─ STAGE 3: Translate to English
-   │  └─ Uses Google Translate API
+   ├─ STAGE 3: Generate Embedding
+   │  └─ Convert to 1536-dim vector (OpenAI) or 384-dim (local)
    │
-   ├─ STAGE 4: Generate Embedding
-   │  └─ Convert to 384-dim vector (local) or 1536-dim (OpenAI)
-   │
-   ├─ STAGE 5: Search Vector Store
+   ├─ STAGE 4: Search Vector Store
    │  └─ FAISS finds top-3 similar policy chunks
    │
-   ├─ STAGE 6: Build Context
+   ├─ STAGE 5: Build Context
    │  └─ Combine chunks into prompt
    │
-   ├─ STAGE 7: Call LLM
+   ├─ STAGE 6: Call LLM
+   │  └─ Get policy-grounded answer
    │
-   └─ STAGE 8: Translate Back
-      └─ Answer returned in customer's original language
+   └─ STAGE 7: Preserve Language Style
+      └─ Ensures answer matches user's original language/style
 
 OUTPUT: Policy-Based Answer
 ```
@@ -270,7 +259,7 @@ OUTPUT: Policy-Based Answer
 
 ---
 
-## �️ Frontend & Backend Architecture
+## 🏗️ Architecture Flow
 
 ### System Architecture Overview
 
@@ -335,30 +324,26 @@ OUTPUT: Policy-Based Answer
 │ │  ├─ Validate: Not empty, not too long                               │
 │ │  └─ Output: Cleaned query string                                    │
 │ │                                                                     │
-│ ├─ STEP 2: LANGUAGE DETECTION (Local - CPU)                           │
-│ │  ├─ Tool: langdetect                                                │
+│ ├─ STEP 2: LANGUAGE STYLE DETECTION                                   │
+│ │  ├─ Function: detect_style()                                        │
 │ │  ├─ Input: Raw user query                                           │
-│ │  ├─ Process: ML model on CPU                                        │
-│ │  └─ Output: Language code (en/hi/te/gu/ta)                          │
+│ │  ├─ Tool: OpenAI LLM with STYLE_DETECT_PROMPT                       │
+│ │  └─ Output: Language style (english/hindi/telugu/gujarati/tamil/hinglish/telgish) │
 │ │                                                                     │
-│ ├─ STEP 3: HINGLISH/TELGISH NORMALIZATION (Local - CPU)               │
-│ │  ├─ Function: normalize_mixed_query()                               │
-│ │  ├─ Input: English-detected mixed-script query                      │
-│ │  ├─ Process: Regex + word mapping                                   │
-│ │  │          "polcy" → "policy"                                      │
-│ │  │          "kya hai" → "what is"                                   │
-│ │  │          "eni rojulu" → "how many days"                          │
-│ │  └─ Output: Normalized English query                                │
+│ ├─ STEP 3: GREETING HANDLING                                          │
+│ │  ├─ Function: is_greeting()                                         │
+│ │  ├─ Input: Cleaned query                                            │
+│ │  └─ Output: Match to predefined greeting words                      │
 │ │                                                                     │
-│ ├─ STEP 4: TRANSLATION TO ENGLISH (Cloud - Google)                    │
-│ │  ├─ Tool: deep_translator (Google Translate backend)                │
-│ │  ├─ Input: Query in detected language                               │
-│ │  ├─ Cloud API: https://translate.googleapis.com                     │
-│ │  ├─ Latency: ~200-500ms                                             │
-│ │  └─ Output: English query string                                    │
+│ ├─ STEP 4: QUERY NORMALIZATION                                        │
+│ │  ├─ Function: normalize_to_english()                                │
+│ │  ├─ Input: Original query in any language/style                     │
+│ │  ├─ Tool: OpenAI LLM with NORMALIZE_PROMPT                          │
+│ │  └─ Output: Clean English query for embedding                       │
 │ │                                                                     │
-│ ├─ STEP 5: EMBEDDING GENERATION (Local or Cloud)                      │
-│ │  ├─ Input: English query (max 512 tokens)                           │
+│ ├─ STEP 5: EMBEDDING GENERATION                                       │
+│ │  ├─ Function: get_embedding()                                       │
+│ │  ├─ Input: Clean English query                                      │
 │ │  │                                                                 │
 │ │  ├─ Option A: Local Embeddings (CPU)                                │
 │ │  │  ├─ Tool: sentence-transformers                                  │
@@ -372,43 +357,46 @@ OUTPUT: Policy-Based Answer
 │ │     ├─ Output: 1536-dimensional vector                              │
 │ │     └─ Latency: ~300-600ms                                          │
 │ │                                                                     │
-│ ├─ STEP 6: VECTOR SIMILARITY SEARCH (Local - Disk)                    │
+│ ├─ STEP 6: VECTOR SIMILARITY SEARCH                                   │
+│ │  ├─ Function: retrieve_context()                                    │
 │ │  ├─ Tool: FAISS (IndexFlatL2)                                       │
 │ │  ├─ Database: vector_store/index.faiss                              │
 │ │  ├─ Algorithm: L2 Euclidean distance                                │
 │ │  ├─ Search: Top-3 most similar chunks                               │
 │ │  └─ Latency: ~5ms (very fast, local disk)                           │
 │ │                                                                     │
-│ ├─ STEP 7: CONTEXT ASSEMBLY (Local - RAM)                             │
+│ ├─ STEP 7: CONTEXT ASSEMBLY                                           │
 │ │  ├─ Load: Top-3 chunks from vector_store/chunks.pkl                 │
 │ │  ├─ Format: Combine into single context string                      │
 │ │  ├─ Max size: ~2000 chars (fits in LLM context)                     │
 │ │  └─ Memory: ~10-50KB per request                                    │
 │ │                                                                     │
-│ │  ├─ Prepare: System prompt + context + question                     │
-│ │  │                                                                 │
-│ │  │  ├─ Model: llama-3.1-8b-instant                                  │
-│ │  │  ├─ Latency: 800ms-2s                                            │
-│ │  │  └─ Cost: ~$0.07 per 1M tokens                                   │
-│ │  │                                                                 │
-│ │  └─ Option B: OpenAI API (High Quality)                             │
-│ │     ├─ Endpoint: https://api.openai.com/v1/chat/completions        │
-│ │     ├─ Model: gpt-4o-mini                                           │
-│ │     ├─ Latency: 1-3s                                                │
-│ │     └─ Cost: ~$0.15 per 1M tokens                                   │
+│ ├─ STEP 8: LANGUAGE-AWARE PROMPT CONSTRUCTION                         │
+│ │  ├─ Function: build_style_instruction()                             │
+│ │  ├─ Input: Detected language style                                  │
+│ │  ├─ Process: Generate specific instruction to preserve language/style │
+│ │  └─ Output: Language instruction for LLM                            │
 │ │                                                                     │
-│ │  Output: English answer (grounded in context only)                  │
+│ ├─ STEP 9: LLM INFERENCE                                              │
+│ │  ├─ Tool: OpenAI API                                                │
+│ │  ├─ Endpoint: https://api.openai.com/v1/chat/completions            │
+│ │  ├─ Model: gpt-4o-mini                                              │
+│ │  ├─ Latency: 1-3s                                                   │
+│ │  ├─ Cost: ~$0.15 per 1M tokens                                      │
+│ │  │                                                                  │
+│ │  ├─ Input Components:                                               │
+│ │  │  ├─ SYSTEM_PROMPT (rules, context instructions)                  │
+│ │  │  ├─ Context (retrieved policy chunks)                            │
+│ │  │  ├─ User question (original + normalized)                        │
+│ │  │  └─ Language style instruction (preserves response style)        │
+│ │  │                                                                  │
+│ │  └─ Output: Answer in English (grounded in context only)            │
 │ │                                                                     │
-│ ├─ STEP 9: RESPONSE TRANSLATION (Cloud - Google)                      │
-│ │  ├─ Tool: deep_translator (Google Translate)                        │
-│ │  ├─ Input: English answer from LLM                                  │
-│ │  ├─ Target: Original language (if not English)                      │
-│ │  ├─ Latency: ~200-500ms                                             │
-│ │  └─ Output: Answer in customer's language                           │
-│ │                                                                     │
-│ └─ STEP 10: RESPONSE FORMAT (Local - RAM)                             │
-│    ├─ Format: JSON string                                             │
-│    └─ Return to Gradio                                                │
+│ └─ STEP 10: RESPONSE FORMATTING                                       │
+│    ├─ Function: answer() final processing                             │
+│    ├─ Process: Check if LLM returned fallback message                 │
+│    ├─ Replace with language-appropriate fallback if needed            │
+│    └─ Return: Final answer                                            │
 │                                                                        │
 └────────────────────────────────────────────────────────────────────────┘
                               │
@@ -460,14 +448,12 @@ CUSTOMER INTERACTION FLOW
    └────────────────────────────────────────┘
 
 4. Backend processes (10 steps, ~2-3 seconds total):
-   ├─ Detects: Hinglish (auto→en)
-   ├─ Normalizes: "polcy" not found, keeps as is
-   ├─ Translates: "Return policy kya hai?" → "What is return policy?"
-   ├─ Embeds: Converts to 384-dim vector
+   ├─ Detects: Hinglish (hinglish)
+   ├─ Normalizes: "Return policy kya hai?" → "What is the return policy?"
+   ├─ Embeds: Converts to 1536-dim vector
    ├─ Searches: Finds "Refunds are processed only after..." chunk
    ├─ Builds context: "Refunds are processed... Approved refunds credited..."
    ├─ Calls LLM: Gets "Approved refunds within 7-10 business days"
-   ├─ Translates back: "7 to 10 business days ka refund hota hai"
    └─ Returns: JSON with answer
 
 5. Frontend receives JSON:
@@ -496,7 +482,7 @@ CUSTOMER INTERACTION FLOW
 ```
 FRONTEND DEPENDENCIES
 ──────────────────────────────
-gradio (4.44.1)
+gradio (6.9.0)
   ├─ React (frontend framework)
   ├─ FastAPI (HTTP server - auto-generated)
   ├─ Pydantic (request validation)
@@ -511,29 +497,20 @@ Python 3.11 Core:
 Vector Search:
   ├─ faiss-cpu (1.7.4) - Local FAISS index
   ├─ numpy (1.26.4) - Numerical arrays
-  ├─ sentence-transformers (9.2.0) - Local embeddings
+  ├─ sentence-transformers (latest) - Local embeddings
   └─ huggingface_hub (0.25.2) - Model downloads
 
 Language Processing:
   ├─ langdetect - Detect language
-  ├─ deep_translator - Google Translate API wrapper
-  └─ langchain-text-splitters - Text chunking (ingest only)
+  ├─ langchain-text-splitters - Text chunking (ingest only)
+  └─ openai - OpenAI API client
 
 API Clients:
   └─ python-dotenv - .env file support
 
 CLOUD SERVICES (External APIs)
 ──────────────────────────────
-1. Google Translate API
-   ├─ Used by: deep_translator
-   ├─ Purpose: Translate queries + responses
-   └─ Free tier: 500K chars/month
-
-   ├─ Model: llama-3.1-8b-instant
-   ├─ Cost: ~$0.07 / 1M tokens (very cheap)
-   └─ Used for: LLM generation (Stage 8)
-
-3. OpenAI API (Optional)
+1. OpenAI API
    ├─ Key: OPENAI_API_KEY (from https://platform.openai.com)
    ├─ Models:
    │  ├─ text-embedding-3-small (embeddings)
@@ -555,115 +532,18 @@ data/ (Your knowledge base)
   └─ accessories.txt
 
 .env (Your API keys)
-  ├─ OPENAI_API_KEY (optional)
-```
-
-### Execution Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ START: User opens http://127.0.0.1:7860 in browser         │
-└─────────────────────────────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Gradio initializes (app.py loaded)  │
-         ├─────────────────────────────────────┤
-         │ ✅ Load FAISS index                 │
-         │ ✅ Load chunks (pickle)             │
-         │ ✅ Load metadata                    │
-         │ ✅ Initialize LLM client            │
-         │ ✅ (Embedding model: lazy-loaded)   │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ UI Ready: Chat interface displays   │
-         │ - Example prompts clickable         │
-         │ - Input textbox focused             │
-         │ - Chat history empty                │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Customer types query + hits Enter   │
-         │                                     │
-         │ Example: "Return policy kya hai?"   │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Frontend: Validate input            │
-         │ - Not empty? ✅                     │
-         │ - Not too long? ✅                  │
-         │ Append to chat display              │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Send JSON to backend:               │
-         │ POST /api/predict/                  │
-         │ {"data": ["query", [[history]]]}    │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌──────────────────────────────────────────────────┐
-         │ BACKEND: app.py answer() function executes      │
-         ├──────────────────────────────────────────────────┤
-         │                                                  │
-         │ ┌─── STAGE 1-10 (see previous section) ───┐     │
-         │ │ All 10 processing stages run here       │     │
-         │ │ Including translations, embedding,      │     │
-         │ │ FAISS search, LLM call, etc.            │     │
-         │ └────────────────────────────────────────┘     │
-         │                                                  │
-         │                  or 3-8 seconds (OpenAI)       │
-         │                                                  │
-         │ Returns: English answer → Translate back       │
-         │                                                  │
-         └──────────────────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Backend returns JSON:               │
-         │ {"data": ["Answer in Hindi/etc."]}  │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ Frontend: Receives response         │
-         │ - Parse JSON                        │
-         │ - Extract answer text               │
-         │ - Append to chat as bot message     │
-         │ - Auto-scroll to latest             │
-         │ - Clear input textbox               │
-         │ - Focus input for next question     │
-         └─────────────────────────────────────┘
-                             │
-                             ▼
-         ┌─────────────────────────────────────┐
-         │ READY: Waiting for next input       │
-         │ (Repeat from customer types query)  │
-         └─────────────────────────────────────┘
+  ├─ OPENAI_API_KEY (required)
 ```
 
 ---
 
-## �🔧 Configuration
+## 🔧 Configuration
 
-### API Key Options
+### API Key Setup
 
-```
-```
-
-**Full Quality (OpenAI): ~$0.15 per 1M tokens**
+**OpenAI Required: ~$0.15 per 1M tokens**
 ```
 OPENAI_API_KEY=sk_...
-```
-
-**Hybrid (Use both):**
-```
-OPENAI_API_KEY=sk_...        # For embeddings
 ```
 
 ### Model Selection
@@ -680,7 +560,7 @@ OPENAI_LLM_MODEL = "gpt-4o-mini"               # or "gpt-4", "gpt-3.5-turbo"
 ### Retrieval Tuning
 
 ```python
-# Line 14: Number of chunks to retrieve
+# Line 16: Number of chunks to retrieve
 TOP_K = 3  # Increase for more context, higher cost
 ```
 
@@ -778,12 +658,6 @@ MIXED_MAP = {
 
 ### LLM Models
 
-- Model: `llama-3.1-8b-instant`
-- Quality: Good for policy answers
-- Speed: 50-100 tokens/second
-- Cost: ~$0.07 per 1M input tokens
-- Latency: 1-3 seconds typical
-
 **OpenAI (High Quality)**
 - Model: `gpt-4o-mini`
 - Quality: Excellent, nuanced answers
@@ -832,16 +706,13 @@ CMD ["python", "app.py"]
 ### Typical Response Time Breakdown (in milliseconds)
 
 ```
-├─ Language detection      : 5ms
-├─ Hinglish normalization  : 2ms
-├─ Embedding generation    : 50ms    ← First time: 500ms (model load)
-├─ FAISS search           : 5ms
-├─ Context assembly       : 3ms
-├─ Translation back       : 100ms
-└─ Total                  : ~1000ms (1 second)
-
-OpenAI + OpenAI Embeddings (Quality)
-└─ Total                  : ~2500ms (2.5 seconds)
+├─ Language style detection: 500ms   ← LLM call
+├─ Query normalization       : 500ms   ← LLM call
+├─ Embedding generation      : 300ms   ← OpenAI embedding
+├─ FAISS search              : 5ms
+├─ Context assembly          : 3ms
+├─ LLM inference             : 1500ms  ← LLM call
+└─ Total                    : ~2800ms (2.8 seconds)
 ```
 
 ---
@@ -852,7 +723,6 @@ OpenAI + OpenAI Embeddings (Quality)
 - **Chunks**: Text only, no PII handling
 - **API keys**: Stored in `.env` (gitignore it!)
 - **Data**: Queries NOT logged (unless you code it)
-- **Translations**: Sent to Google (read their policy)
 
 **.gitignore essentials:**
 ```
@@ -876,24 +746,18 @@ __pycache__/
 
 ### Add New Languages
 
-Edit `app.py` line 18:
+Edit `app.py` line 20:
 ```python
 SUPPORTED_LANGS = {"en", "hi", "te", "gu", "ta", "kn", "ml", "mr"}  # Add more codes
 ```
 
 ### Add Hinglish/Telgish Words
 
-Edit `app.py` line 26-38, `MIXED_MAP` dict:
-```python
-MIXED_MAP = {
-    "your_typo": "correct_form",
-    "anothr_typo": "correct_form",
-}
-```
+Edit `app.py` `NORMALIZE_PROMPT` examples and `STYLE_DETECT_PROMPT` rules to add more patterns.
 
 ### Change Greeting/System Prompt
 
-Edit `app.py` line 22-25, `SYSTEM_PROMPT`:
+Edit `app.py` line 23-40, `SYSTEM_PROMPT`:
 ```python
 SYSTEM_PROMPT = """Your custom system instructions here."""
 ```
@@ -903,7 +767,7 @@ SYSTEM_PROMPT = """Your custom system instructions here."""
 ## ❓ FAQ
 
 **Q: Do I need GPU?**
-No. CPU-only is fine. First query may load embedding model (~500ms), then ~1-2s per query.
+No. CPU-only is fine. First query may load embedding model (~500ms), then ~2-3s per query.
 
 **Q: What if API key expires?**
 Update `.env` and restart app. No rebuild needed.
