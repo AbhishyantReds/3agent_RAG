@@ -1,32 +1,43 @@
-import os
-import pickle
-import re
-import subprocess
-import sys
+"""DROMA ELECTRONICS - MULTILINGUAL SUPPORT CHATBOT
+Provides customer support using AI and vector search.
+Answers questions about warranties, refunds, and policies in multiple languages.
+"""
 
-import faiss
-import gradio as gr
-import numpy as np
-from deep_translator import GoogleTranslator
-from dotenv import load_dotenv
-from langdetect import detect
-from openai import OpenAI
+import os  # Operating system functions
+import pickle  # Save/load Python objects
+import re  # Regular expressions for text processing
+import subprocess  # Run ingest.py if needed
+import sys  # System utilities
 
-TOP_K = 3
-OPENAI_EMBED_MODEL = "text-embedding-3-small"
-LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
-OPENAI_LLM_MODEL = "gpt-4o-mini"
-SUPPORTED_LANGS = {"en", "hi", "te", "gu", "ta"}
-STORE_DIR = "vector_store"
+import faiss  # Facebook vector search (find similar documents)
+import gradio as gr  # Web UI framework
+import numpy as np  # Numerical arrays for vectors
+from deep_translator import GoogleTranslator  # Translate between languages
+from dotenv import load_dotenv  # Load API keys from .env file
+from langdetect import detect  # Detect what language text is in
+from openai import OpenAI  # OpenAI API for embeddings & LLM
+
+# ============ CONFIGURATION ============
+TOP_K = 3  # Return top 3 most similar documents  # Return top 3 most similar documents
+OPENAI_EMBED_MODEL = "text-embedding-3-small"  # Model to convert text to vectors
+LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"  # Fallback local embedding model
+OPENAI_LLM_MODEL = "gpt-4o-mini"  # Language model for generating responses
+SUPPORTED_LANGS = {"en", "hi", "te", "gu", "ta"}  # English, Hindi, Telugu, Gujarati, Tamil
+STORE_DIR = "vector_store"  # Directory with indexed documents
+
+# System instructions for the LLM - controls how it behaves
 SYSTEM_PROMPT = """You are a customer support assistant for DROMA Electronics.
 Answer the user's question using ONLY the context provided below.
 If the answer is not in the context, say: \"I don't have information on that.\"
 Be concise and helpful.
 Always reply strictly in the same language as the user's question."""
+# Message to show when we don't have the information
 FALLBACK_EN = (
     "I'm here to help. I couldn't find that in DROMA policy docs yet. "
     "Please ask about warranties, returns/refunds, service timelines, or accessories."
 )
+
+# Words that indicate a user is greeting us (instead of asking a real question)
 GREETING_WORDS = {
     "hi",
     "hello",
@@ -38,6 +49,8 @@ GREETING_WORDS = {
     "hii",
     "hlo",
 }
+
+# Dictionary to fix common spelling mistakes and convert to English
 MIXED_MAP = {
     "polciy": "policy",
     "polcy": "policy",
@@ -53,6 +66,7 @@ MIXED_MAP = {
     "niyam": "policy",
 }
 
+# Load API keys from .env file
 load_dotenv()
 openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
 
@@ -64,9 +78,9 @@ meta_path = os.path.join(STORE_DIR, "meta.pkl")
 def ensure_vector_store() -> None:
     if os.path.exists(index_path) and os.path.exists(chunks_path) and os.path.exists(meta_path):
         return
-    print("vector_store missing. Running ingest.py...")
-    cmd = [sys.executable, "ingest.py"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    print("vector_store missing. Running ingest.py...")  # Auto-build vector store
+    cmd = [sys.executable, "ingest.py"]  # Run ingest.py to build it
+    result = subprocess.run(cmd, capture_output=True, text=True)  # Execute command
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise SystemExit(f"Failed to build vector_store: {detail}")
@@ -74,17 +88,22 @@ def ensure_vector_store() -> None:
         raise SystemExit("ingest.py finished but vector_store files were not created")
 
 
+# Auto-create vector store if it doesn't exist
 ensure_vector_store()
 
+# Load the FAISS index for fast similarity search
 index = faiss.read_index(index_path)
+# Load document chunks (the actual text pieces)
 with open(chunks_path, "rb") as f:
     CHUNKS = pickle.load(f)
+# Load metadata about how embeddings were created
 with open(meta_path, "rb") as f:
     META = pickle.load(f)
 
-EMBED_MODE = META.get("embed_mode", "openai")
-EMBED_MODEL = META.get("embed_model", OPENAI_EMBED_MODEL)
-EMBED_DIM = int(META.get("embed_dim", index.d))
+# Extract embedding configuration
+EMBED_MODE = META.get("embed_mode", "openai")  # "openai" or "local"
+EMBED_MODEL = META.get("embed_model", OPENAI_EMBED_MODEL)  # Which model was used
+EMBED_DIM = int(META.get("embed_dim", index.d))  # Vector size (384 or similar)
 if EMBED_DIM != index.d:
     raise SystemExit(f"Index/meta dim mismatch: {index.d} vs {EMBED_DIM}")
 
@@ -93,16 +112,18 @@ if EMBED_MODE == "openai" and not openai_key:
 if not openai_key:
     raise SystemExit("Set OPENAI_API_KEY in .env")
 
-embed_client = OpenAI(api_key=openai_key)
-llm_client, LLM_MODEL = OpenAI(api_key=openai_key), OPENAI_LLM_MODEL
+# API clients
+embed_client = OpenAI(api_key=openai_key)  # For creating embeddings
+llm_client, LLM_MODEL = OpenAI(api_key=openai_key), OPENAI_LLM_MODEL  # For generating responses
 
+# If using local embeddings, load the model
 if EMBED_MODE == "local":
     from sentence_transformers import SentenceTransformer
-
     local_embedder = SentenceTransformer(LOCAL_EMBED_MODEL)
 
 
 def translate_text(text: str, src: str, tgt: str) -> str:
+    """Translate text from source language to target language."""
     try:
         return GoogleTranslator(source=src, target=tgt).translate(text)
     except Exception:
@@ -168,7 +189,9 @@ def answer(query: str, history: list) -> str:
     if is_greeting(query):
         return greeting_reply(src_lang)
     try:
+        # Prepare query for document search
         if src_lang == "en":
+            # For English: auto-translate, normalize, combine variants
             auto_en = translate_text(query, "auto", "en")
             normalized = normalize_mixed_query(query)
             parts = [query]
@@ -178,50 +201,68 @@ def answer(query: str, history: list) -> str:
                 parts.append(normalized)
             english_query = "\n".join(dict.fromkeys(parts))
         else:
+            # For non-English: translate to English, then normalize
             english_query = translate_text(query, src_lang, "en")
             normalized = normalize_mixed_query(english_query)
             if normalized and normalized != english_query.strip().lower():
                 english_query = f"{english_query}\n{normalized}"
+        # Convert query to vector (embedding)
         if EMBED_MODE == "openai":
             qvec = embed_client.embeddings.create(model=EMBED_MODEL, input=[english_query]).data[0].embedding
         else:
             qvec = local_embedder.encode([english_query], normalize_embeddings=True)[0]
+        
+        # Search FAISS index for similar documents
         vector = np.array([qvec], dtype=np.float32)
         if vector.shape[1] != EMBED_DIM:
             return "Embedding error. Please try again."
-        _, ids = index.search(vector, TOP_K)
-        context = "\n\n".join(CHUNKS[int(i)] for i in ids[0] if 0 <= int(i) < len(CHUNKS))
+        _, ids = index.search(vector, TOP_K)  # Find TOP_K closest matches
+        # Extract relevant document chunks
+        # Build LLM prompt with context and language instructions
         style_hint = ""
         if src_lang == "en" and is_mixed_style_query(query):
+            # If mixed language (Hinglish/Telgish), tell LLM to match style
             style_hint = "\nReply in concise mixed Roman-script style similar to the user's wording."
+        
+        # Strict language enforcement
         strict_lang_hint = f"\nReply strictly in {lang_name(src_lang)}. Do not switch languages."
-        user_prompt = f"Context:\n{context}\n\nQuestion: {english_query}{strict_lang_hint}{style_hint}"
+        # Call OpenAI LLM
         resp = llm_client.chat.completions.create(
             model=LLM_MODEL,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
+                {"role": "system", "content": SYSTEM_PROMPT},  # Behavior instructions
+                {"role": "user", "content": user_prompt},  # The actual question
             ],
-            temperature=0.2,
+            temperature=0.2,  # Lower = more consistent, less creative
         )
+        
+        # Extract the response
         answer_en = resp.choices[0].message.content.strip()
+        # If LLM says it doesn't have info, use friendlier fallback
         if answer_en.lower() == "i don't have information on that.":
             answer_en = FALLBACK_EN
+        
+        # Translate response back to user's language if needed
         if src_lang == "en":
             return translate_text(answer_en, "auto", "en")
-        return translate_text(answer_en, "auto", src_lang)
+        return translate_text(answer_en, "auto", src_lang)  # Translate to user's language
+    
     except Exception:
+        # If anything goes wrong, return helpful error message
         return "I had a temporary issue processing that. Please try again."
 
 
+# ============ GRADIO WEB UI ============
+# Create the chat interface that users interact with
+
 demo = gr.ChatInterface(
-    fn=answer,
-    title="DROMA Electronics Support Assistant",
+    fn=answer,  # Function to call when user sends a message
+    title="DROMA Electronics Support Assistant",  # Page title
     description=(
         "Multilingual policy helper for warranty, refunds, service timelines, and accessories. "
         "Ask in English, Hindi, Telugu, Gujarati, or Tamil."
-    ),
-    examples=[
+    ),  # Info text
+    examples=[  # Example questions to show users
         "Is laptop screen damage covered under warranty?",
         "DROMA लैपटॉप की वारंटी कितने साल की है?",
         "Laptop screen damage warranty lo cover avutunda?",
@@ -230,12 +271,13 @@ demo = gr.ChatInterface(
         "How long does refund processing take?",
     ],
     textbox=gr.Textbox(
-        placeholder="Ask your DROMA question here...",
+        placeholder="Ask your DROMA question here...",  # Input hint
         lines=2,
         max_lines=4,
         show_label=False,
-    ),
+    ),  # Input text box
 )
 
+# Run the web app
 if __name__ == "__main__":
-    demo.launch(share=False)
+    demo.launch(share=False)  # Start server (share=False means local only)
