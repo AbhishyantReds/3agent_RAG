@@ -10,7 +10,6 @@
 ✅ **Hinglish/Telgish Compatible**: "Return policy kya hai?" works perfectly  
 ✅ **Mixed-Script Support**: Detects and normalizes Roman-script inputs (e.g., "polcy" → "policy")  
 ✅ **Instant Setup**: No ML expertise needed—production-ready in 5 minutes  
-✅ **Flexible LLM**: Works with Groq (cheap) or OpenAI (accurate)  
 ✅ **Local Embeddings**: CPU-only option (free, no API calls)  
 ✅ **Fast Retrieval**: FAISS vector search on local disk  
 ✅ **Policy-Grounded**: Only answers from your knowledge base  
@@ -65,7 +64,6 @@ A: Return policy 7 to 10 rojulu. Approved refunds credit avutay.
 | **Backend** | Python 3.11 | Processing pipeline | Free |
 | **Vectorization** | sentence-transformers (all-MiniLM-L6-v2) | Local embeddings | Free |
 | **Vector DB** | FAISS | Similarity search | Free |
-| **LLM - Option A** | Groq (llama-3.1-8b-instant) | Fast & cheap AI | ~$0.07/1M tokens |
 | **LLM - Option B** | OpenAI (gpt-4o-mini) | High quality AI | ~$0.15/1M tokens |
 | **Language Detection** | langdetect | Detect input language | Free |
 | **Translation** | Google Translate (deep_translator) | Multi-language support | Free (via API) |
@@ -77,7 +75,6 @@ A: Return policy 7 to 10 rojulu. Approved refunds credit avutay.
 
 ### Step 1: Prerequisites
 - Python 3.11+ installed
-- One API key: **Groq** (free, fast) OR **OpenAI** (optional, for embeddings)
 
 ### Step 2: Clone & Setup
 ```bash
@@ -97,10 +94,7 @@ python -m venv .venv
 ### Step 3: Configure API Keys
 Create `.env` file in project root:
 
-**Option A: Groq Only (Cheapest)**
 ```
-GROQ_API_KEY=gsk_your_groq_key_here
-GROQ_BASE_URL=https://api.groq.com/openai/v1
 ```
 
 **Option B: OpenAI Only**
@@ -111,8 +105,6 @@ OPENAI_API_KEY=sk_your_openai_key_here
 **Option C: Both (Best Quality)**
 ```
 OPENAI_API_KEY=sk_your_openai_key_here
-GROQ_API_KEY=gsk_your_groq_key_here
-GROQ_BASE_URL=https://api.groq.com/openai/v1
 ```
 
 ### Step 4: Build Vector Store
@@ -207,7 +199,6 @@ Try these:
 Pinned versions for compatibility:
 ```
 gradio==4.44.1              ← Web UI
-openai                      ← API client (OpenAI + Groq)
 faiss-cpu==1.7.4            ← Vector search
 langchain-text-splitters    ← Text chunking
 deep_translator             ← Google Translate wrapper
@@ -247,7 +238,6 @@ INPUT: Customer Question
    │  └─ Combine chunks into prompt
    │
    ├─ STAGE 7: Call LLM
-   │  └─ Groq or OpenAI generates answer (grounded only in context)
    │
    └─ STAGE 8: Translate Back
       └─ Answer returned in customer's original language
@@ -395,11 +385,8 @@ OUTPUT: Policy-Based Answer
 │ │  ├─ Max size: ~2000 chars (fits in LLM context)                     │
 │ │  └─ Memory: ~10-50KB per request                                    │
 │ │                                                                     │
-│ ├─ STEP 8: LLM GENERATION (Cloud - Groq or OpenAI)                    │
 │ │  ├─ Prepare: System prompt + context + question                     │
 │ │  │                                                                 │
-│ │  ├─ Option A: Groq API (Fast & Cheap)                               │
-│ │  │  ├─ Endpoint: https://api.groq.com/openai/v1/chat/completions   │
 │ │  │  ├─ Model: llama-3.1-8b-instant                                  │
 │ │  │  ├─ Latency: 800ms-2s                                            │
 │ │  │  └─ Cost: ~$0.07 per 1M tokens                                   │
@@ -533,7 +520,6 @@ Language Processing:
   └─ langchain-text-splitters - Text chunking (ingest only)
 
 API Clients:
-  ├─ openai - OpenAI + Groq client (both use OpenAI API format)
   └─ python-dotenv - .env file support
 
 CLOUD SERVICES (External APIs)
@@ -543,8 +529,6 @@ CLOUD SERVICES (External APIs)
    ├─ Purpose: Translate queries + responses
    └─ Free tier: 500K chars/month
 
-2. Groq API
-   ├─ Key: GROQ_API_KEY (from https://console.groq.com)
    ├─ Model: llama-3.1-8b-instant
    ├─ Cost: ~$0.07 / 1M tokens (very cheap)
    └─ Used for: LLM generation (Stage 8)
@@ -572,8 +556,6 @@ data/ (Your knowledge base)
 
 .env (Your API keys)
   ├─ OPENAI_API_KEY (optional)
-  ├─ GROQ_API_KEY (required at least one)
-  └─ GROQ_BASE_URL (defaults to Groq endpoint)
 ```
 
 ### Execution Flow Diagram
@@ -635,7 +617,6 @@ data/ (Your knowledge base)
          │ │ FAISS search, LLM call, etc.            │     │
          │ └────────────────────────────────────────┘     │
          │                                                  │
-         │ Typical latency: 2-5 seconds (Groq)           │
          │                  or 3-8 seconds (OpenAI)       │
          │                                                  │
          │ Returns: English answer → Translate back       │
@@ -672,9 +653,7 @@ data/ (Your knowledge base)
 
 ### API Key Options
 
-**Minimal (Groq): ~$0.07 per 1M tokens**
 ```
-GROQ_API_KEY=gsk_...
 ```
 
 **Full Quality (OpenAI): ~$0.15 per 1M tokens**
@@ -685,7 +664,6 @@ OPENAI_API_KEY=sk_...
 **Hybrid (Use both):**
 ```
 OPENAI_API_KEY=sk_...        # For embeddings
-GROQ_API_KEY=gsk_...         # For LLM
 ```
 
 ### Model Selection
@@ -697,7 +675,6 @@ Edit `app.py` to change LLM or embedding model:
 OPENAI_EMBED_MODEL = "text-embedding-3-small"  # or "text-embedding-3-large"
 LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"         # or other sentence-transformers model
 OPENAI_LLM_MODEL = "gpt-4o-mini"               # or "gpt-4", "gpt-3.5-turbo"
-GROQ_LLM_MODEL = "llama-3.1-8b-instant"        # or "mixtral-8x7b-32768"
 ```
 
 ### Retrieval Tuning
@@ -754,10 +731,8 @@ python app.py                    # ❌ Wrong
 .venv\Scripts\python.exe ingest.py
 ```
 
-**Issue: "Set OPENAI_API_KEY or GROQ_API_KEY in .env"**
 ```bash
 # Solution: Create .env with at least one key
-echo GROQ_API_KEY=gsk_... >> .env
 ```
 
 **Issue: "Response takes 30+ seconds"**
@@ -766,7 +741,6 @@ echo GROQ_API_KEY=gsk_... >> .env
 # Subsequent: 2-5 seconds normal
 # If persistent, check:
 # 1. Internet speed (for translations)
-# 2. API rate limits (Groq/OpenAI)
 # 3. Use local embeddings in app.py
 ```
 
@@ -804,7 +778,6 @@ MIXED_MAP = {
 
 ### LLM Models
 
-**Groq (Fast & Cheap)**
 - Model: `llama-3.1-8b-instant`
 - Quality: Good for policy answers
 - Speed: 50-100 tokens/second
@@ -844,7 +817,6 @@ CMD ["python", "app.py"]
 ### Hugging Face Spaces
 1. Push repo to GitHub
 2. Create Hugging Face Space
-3. Add Secrets: `GROQ_API_KEY` or `OPENAI_API_KEY`
 4. Deploy!
 
 ### AWS/Azure/GCP
@@ -860,13 +832,11 @@ CMD ["python", "app.py"]
 ### Typical Response Time Breakdown (in milliseconds)
 
 ```
-Groq + Local Embeddings (Fast)
 ├─ Language detection      : 5ms
 ├─ Hinglish normalization  : 2ms
 ├─ Embedding generation    : 50ms    ← First time: 500ms (model load)
 ├─ FAISS search           : 5ms
 ├─ Context assembly       : 3ms
-├─ LLM call (Groq)        : 800ms
 ├─ Translation back       : 100ms
 └─ Total                  : ~1000ms (1 second)
 
@@ -957,7 +927,6 @@ Not in this version (RAG-only). Use OpenAI fine-tuning separately.
 - [Gradio Docs](https://gradio.app/docs)
 - [FAISS Guide](https://github.com/facebookresearch/faiss)
 - [sentence-transformers Models](https://www.sbert.net/docs/pretrained_models.html)
-- [Groq API Docs](https://console.groq.com/docs)
 - [OpenAI API Docs](https://platform.openai.com/docs)
 
 ---
@@ -983,7 +952,6 @@ MIT. Use freely for any purpose.
 
 1. ✅ Clone project
 2. ✅ Install dependencies: `pip install -r requirements.txt`
-3. ✅ Add `.env` with API key (Groq or OpenAI)
 4. ✅ Build vector store: `python ingest.py`
 5. ✅ Launch: `python app.py`
 6. ✅ Visit: http://127.0.0.1:7860

@@ -16,7 +16,6 @@ TOP_K = 3
 OPENAI_EMBED_MODEL = "text-embedding-3-small"
 LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
 OPENAI_LLM_MODEL = "gpt-4o-mini"
-GROQ_LLM_MODEL = "llama-3.1-8b-instant"
 SUPPORTED_LANGS = {"en", "hi", "te", "gu", "ta"}
 STORE_DIR = "vector_store"
 SYSTEM_PROMPT = """You are a customer support assistant for DROMA Electronics.
@@ -55,8 +54,6 @@ MIXED_MAP = {
 
 load_dotenv()
 openai_key = (os.getenv("OPENAI_API_KEY") or "").strip()
-groq_key = (os.getenv("GROQ_API_KEY") or "").strip()
-groq_base = (os.getenv("GROQ_BASE_URL") or "https://api.groq.com/openai/v1").strip()
 
 index_path = os.path.join(STORE_DIR, "index.faiss")
 chunks_path = os.path.join(STORE_DIR, "chunks.pkl")
@@ -92,14 +89,11 @@ if EMBED_DIM != index.d:
 
 if EMBED_MODE == "openai" and not openai_key:
     raise SystemExit("OPENAI_API_KEY required for this vector_store. Re-run ingest.py or add key.")
-if not openai_key and not groq_key:
-    raise SystemExit("Set OPENAI_API_KEY or GROQ_API_KEY in .env")
+if not openai_key:
+    raise SystemExit("Set OPENAI_API_KEY in .env")
 
-embed_client = OpenAI(api_key=openai_key) if openai_key else None
-if openai_key:
-    llm_client, LLM_MODEL = OpenAI(api_key=openai_key), OPENAI_LLM_MODEL
-else:
-    llm_client, LLM_MODEL = OpenAI(api_key=groq_key, base_url=groq_base), GROQ_LLM_MODEL
+embed_client = OpenAI(api_key=openai_key)
+llm_client, LLM_MODEL = OpenAI(api_key=openai_key), OPENAI_LLM_MODEL
 
 if EMBED_MODE == "local":
     from sentence_transformers import SentenceTransformer
