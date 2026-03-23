@@ -21,7 +21,8 @@ STORE_DIR = "vector_store"
 SYSTEM_PROMPT = """You are a customer support assistant for DROMA Electronics.
 Answer the user's question using ONLY the context provided below.
 If the answer is not in the context, say: \"I don't have information on that.\"
-Be concise and helpful."""
+Be concise and helpful.
+Always reply strictly in the same language as the user's question."""
 FALLBACK_EN = (
     "I'm here to help. I couldn't find that in DROMA policy docs yet. "
     "Please ask about warranties, returns/refunds, service timelines, or accessories."
@@ -119,8 +120,19 @@ def normalize_mixed_query(text: str) -> str:
 
 def is_mixed_style_query(text: str) -> bool:
     q = text.lower()
-    hints = ["kya", "hai", "kitna", "rojulu", "eni", "entha", "lo", "policy", "warranty"]
+    hints = ["kya", "hai", "kitna", "kitne", "rojulu", "eni", "entha", "avutunda", "naa", "niyam"]
     return any(h in q for h in hints)
+
+
+def lang_name(lang_code: str) -> str:
+    names = {
+        "en": "English",
+        "hi": "Hindi",
+        "te": "Telugu",
+        "gu": "Gujarati",
+        "ta": "Tamil",
+    }
+    return names.get(lang_code, "English")
 
 
 def detect_supported_lang(text: str) -> str:
@@ -180,9 +192,10 @@ def answer(query: str, history: list) -> str:
         _, ids = index.search(vector, TOP_K)
         context = "\n\n".join(CHUNKS[int(i)] for i in ids[0] if 0 <= int(i) < len(CHUNKS))
         style_hint = ""
-        if is_mixed_style_query(query):
+        if src_lang == "en" and is_mixed_style_query(query):
             style_hint = "\nReply in concise mixed Roman-script style similar to the user's wording."
-        user_prompt = f"Context:\n{context}\n\nQuestion: {english_query}{style_hint}"
+        strict_lang_hint = f"\nReply strictly in {lang_name(src_lang)}. Do not switch languages."
+        user_prompt = f"Context:\n{context}\n\nQuestion: {english_query}{strict_lang_hint}{style_hint}"
         resp = llm_client.chat.completions.create(
             model=LLM_MODEL,
             messages=[
@@ -194,7 +207,9 @@ def answer(query: str, history: list) -> str:
         answer_en = resp.choices[0].message.content.strip()
         if answer_en.lower() == "i don't have information on that.":
             answer_en = FALLBACK_EN
-        return answer_en if src_lang == "en" else translate_text(answer_en, "en", src_lang)
+        if src_lang == "en":
+            return translate_text(answer_en, "auto", "en")
+        return translate_text(answer_en, "auto", src_lang)
     except Exception:
         return "I had a temporary issue processing that. Please try again."
 
